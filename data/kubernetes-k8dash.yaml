@@ -1,0 +1,67 @@
+kind: Deployment
+apiVersion: apps/v1beta2
+metadata:
+  name: k8dashwindows
+  namespace: nick
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: k8dashwindows
+  template:
+    metadata:
+      labels:
+        k8s-app: k8dashwindows
+    spec:
+      containers:
+      - name: k8dashwindows
+        image: nickwork.azurecr.io/k8dash:windows
+        ports:
+        - containerPort: 4654
+        livenessProbe:
+          httpGet:
+            scheme: HTTP
+            path: /
+            port: 4654
+          initialDelaySeconds: 30
+          timeoutSeconds: 30
+      nodeSelector:
+        'beta.kubernetes.io/os': windows
+      imagePullSecrets:
+      - name: regcred
+
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: k8dashwindows
+  namespace: nick
+spec:
+  ports:
+    - port: 80
+      targetPort: 4654
+  selector:
+    k8s-app: k8dashwindows
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: k8dashwindows-ingress
+  namespace: nick
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    # certmanager.k8s.io/cluster-issuer: letsencrypt-staging
+    # nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  # tls:
+  # - hosts:
+  #   - demo-aks-ingress.eastus.cloudapp.azure.com
+  #   secretName: tls-secret
+  rules:
+  - host: nmaliwa-burrow-ingress.westus2.cloudapp.azure.com
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: k8dashwindows
+          servicePort: 80
